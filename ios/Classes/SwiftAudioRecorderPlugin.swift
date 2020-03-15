@@ -46,13 +46,14 @@ public class SwiftAudioRecorderPlugin: NSObject, FlutterPlugin, AVAudioRecorderD
                 AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
             ]
             do {
-                try AVAudioSession.sharedInstance().setCategory(AVAudioSessionCategoryPlayAndRecord, with: AVAudioSessionCategoryOptions.defaultToSpeaker)
+                try AVAudioSession.sharedInstance().setCategory(AVAudioSession.Category.playAndRecord, options: AVAudioSession.CategoryOptions.defaultToSpeaker)
+
                 try AVAudioSession.sharedInstance().setActive(true)
                 audioRecorder = try AVAudioRecorder(url: URL(string: mPath)!, settings: settings)
                 audioRecorder.delegate = self
                 audioRecorder.record()
                 self.voiceTimer = Timer.scheduledTimer(timeInterval: 0.1, target: self, selector:#selector(SwiftAudioRecorderPlugin.updateMicStatus), userInfo: nil, repeats: true)
-                RunLoop.current.add(self.voiceTimer, forMode: RunLoopMode.commonModes)
+                RunLoop.current.add(self.voiceTimer, forMode: RunLoop.Mode.common)
                 self.voiceTimer.fireDate = Date.distantPast
             } catch {
                 print("fail")
@@ -88,7 +89,7 @@ public class SwiftAudioRecorderPlugin: NSObject, FlutterPlugin, AVAudioRecorderD
             result(isRecording)
         case "hasPermissions":
             print("hasPermissions")
-            switch AVAudioSession.sharedInstance().recordPermission(){
+            switch AVAudioSession.sharedInstance().recordPermission{
             case AVAudioSession.RecordPermission.granted:
                 print("granted")
                 hasPermissions = true
@@ -167,7 +168,7 @@ public class SwiftAudioRecorderPlugin: NSObject, FlutterPlugin, AVAudioRecorderD
         let map = ["amplitude": level]
         callFlutter(method: "onAmplitude", map: map)
     }
-    
+
     func callFlutter(method:String,map:Dictionary<String,Any>){
         if((self.mChannel) != nil){
             mChannel.invokeMethod(method, arguments: map)
