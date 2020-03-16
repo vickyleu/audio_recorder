@@ -56,6 +56,7 @@ public class AudioRecorderPlugin implements MethodCallHandler {
         mCall = call;
         switch (call.method) {
             case "start":
+
                 Log.d(LOG_TAG, "Start");
                 String path = call.argument("path");
                 mExtension = call.argument("extension");
@@ -67,21 +68,34 @@ public class AudioRecorderPlugin implements MethodCallHandler {
                     mFilePath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + fileName + mExtension;
                 }
                 Log.d(LOG_TAG, mFilePath);
+                Log.e("mFilePath",mFilePath);
                 startRecording();
-                isRecording = true;
+
                 result.success(null);
                 break;
             case "stop":
                 Log.d(LOG_TAG, "Stop");
                 stopRecording();
+
+                if (mFilePath == null) {
+                    result.success(null);
+                    return;
+                }
+                File file = new File(mFilePath);
+                if (!file.exists()) {
+                    result.success(null);
+                    return;
+                }
+
                 long duration = Calendar.getInstance().getTime().getTime() - startTime.getTime();
                 Log.d(LOG_TAG, "Duration : " + String.valueOf(duration));
-                isRecording = false;
+
                 HashMap<String, Object> recordingResult = new HashMap<>();
                 recordingResult.put("duration", duration);
                 recordingResult.put("path", mFilePath);
                 recordingResult.put("audioOutputFormat", mExtension);
                 result.success(recordingResult);
+                mFilePath = null;
                 break;
             case "isRecording":
                 Log.d(LOG_TAG, "Get isRecording");
@@ -108,8 +122,9 @@ public class AudioRecorderPlugin implements MethodCallHandler {
         } else {
             startNormalRecording();
         }
+        Log.e("startRecording", "startRecording: " + isRecording);
         if (isRecording) {
-            mHandler.sendEmptyMessage(0);
+            mHandler.postDelayed(mUpdateMicStatusTimer, 50);
         }
     }
 
@@ -127,40 +142,41 @@ public class AudioRecorderPlugin implements MethodCallHandler {
         }
 
         mRecorder.start();
+        isRecording = true;
     }
 
     private void startWavRecording() {
         wavRecorder = new WavRecorder(registrar.context(), mFilePath);
         wavRecorder.startRecording();
+        isRecording = true;
     }
 
     private void stopRecording() {
         mHandler.removeCallbacksAndMessages(null);
-        if (isOutputFormatWav()) {
-            stopWavRecording();
-        } else {
-            stopNormalRecording();
+        if (isRecording) {
+            if (isOutputFormatWav()) {
+                stopWavRecording();
+            } else {
+                stopNormalRecording();
+            }
         }
-        if (mFilePath == null) {
-            return;
-        }
-        File file = new File(mFilePath);
-        if (!file.exists()) {
-            return;
-        }
-        HashMap<String, String> map = new HashMap<String, String>();
-        map.put("path", mFilePath);
-        mFilePath = null;
-        callFlutter("onSavingPath", map);
+
     }
 
     private void stopNormalRecording() {
         if (mRecorder != null) {
-            mRecorder.stop();
+            try {
+                if(isRecording){
+                    mRecorder.stop();
+                }
+            }catch (Exception e){
+                isRecording = false;
+            }
             mRecorder.reset();
             mRecorder.release();
             mRecorder = null;
         }
+
     }
 
     private final Handler mHandler = new Handler();
@@ -172,43 +188,45 @@ public class AudioRecorderPlugin implements MethodCallHandler {
     };
 
     private void updateMicStatus() {
-
+        Log.e("startRecording", "updateMicStatus: ");
         // int vuSize = 10 * mMediaRecorder.getMaxAmplitude() / 32768;
-        int ratio = mRecorder.getMaxAmplitude() / BASE;
-        int db = 0;// 分贝
-        if (ratio > 1) {
-            db = (int) (20 * Math.log10(ratio));
-        }
+//        int ratio = mRecorder.getMaxAmplitude() / BASE;
+//        int db = 0;// 分贝
+//        if (ratio > 1) {
+//            db = (int) (20 * Math.log10(ratio));
+//        }
+        double ratio =((7.0 * ((double)mRecorder.getMaxAmplitude())) / 32768.0);
+        Log.e("updateMicStatus", ""+ratio);
         int level = 0;
-        switch (db / 4) {
-            case 0:
-                level = 0;
-                break;
-            case 1:
-                level = 1;
-                break;
-            case 2:
-                level = 2;
-                break;
-            case 3:
-                level = 3;
-                break;
-            case 4:
-                level = 4;
-                break;
-            case 5:
-                level = 5;
-                break;
-            default:
-                level = 5;
-                break;
+        if (ratio > 0.1 && ratio < 0.2) {
+            level = 2;
+        } else if (ratio > 0.2 && ratio < 0.3) {
+            level = 3;
+        } else if (ratio > 0.3 && ratio < 0.4) {
+            level = 4;
+        } else if (ratio > 0.4 && ratio < 0.5) {
+            level = 5;
+        } else if (ratio > 0.5 && ratio < 0.6) {
+            level = 6;
+        } else if (ratio > 0.6 && ratio < 0.7) {
+            level = 7;
+        } else if (ratio > 0.7) {
+            level = 7;
+        } else {
+            level = 1;
         }
-        HashMap<String, Integer> map = new HashMap<String, Integer>();
+
+        Map<Object, Object> map = new HashMap<Object, Object>();
         map.put("amplitude", level);
-        Log.e("当前音量",""+level);
+        Log.e("amplitude", "" + map.toString());
         callFlutter("onAmplitude", map);
+        double duration = (System.currentTimeMillis())-(startTime != null ? (double) startTime.getTime() : 0);
+        Map<Object, Object> map2 = new HashMap<Object, Object>();
+        map2.put("duration", duration);
+        Log.e("durationduration", "" + map2.toString());
+        callFlutter("onDuration", map2);
         if (mChannel != null && registrar != null && registrar.activity() != null) {
-            mHandler.postDelayed(mUpdateMicStatusTimer, 100);
+            mHandler.postDelayed(mUpdateMicStatusTimer, 50);
         }
         /*
          * if (db > 1) { vuSize = (int) (20 * Math.log10(db)); Log.i("mic_",
@@ -216,17 +234,26 @@ public class AudioRecorderPlugin implements MethodCallHandler {
          */
     }
 
-    private void callFlutter(String method, Map map) {
+    private void callFlutter(final String method, final Map map) {
         if (mChannel != null && registrar != null && registrar.activity() != null) {
-            registrar.activity().runOnUiThread(() -> {
-                mChannel.invokeMethod(method, map);
+            registrar.activity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    mChannel.invokeMethod(method, map);
+                }
             });
         }
     }
 
 
     private void stopWavRecording() {
-        wavRecorder.stopRecording();
+        try {
+            if (wavRecorder != null) {
+                wavRecorder.stopRecording();
+            }
+        }catch (Exception e){
+        }
+        isRecording = false;
     }
 
     private int getOutputFormatFromString(String outputFormat) {

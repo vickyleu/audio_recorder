@@ -56,8 +56,9 @@ public class WavRecorder {
                 RECORDER_AUDIO_ENCODING, bufferSize);
 
         int i = recorder.getState();
-        if (i == 1)
+        if (i == 1) {
             recorder.startRecording();
+        }
 
         isRecording = true;
 

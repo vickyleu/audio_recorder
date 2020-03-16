@@ -58,6 +58,7 @@ class AudioRecorder {
           break;
         case "onDuration":
           Map<dynamic, dynamic> arg = Map.of(call.arguments);
+          print("onDuration===>${arg}");
           double duration = arg["duration"];
           print("setMethodCallHandler==>${duration}");
           _streamController2.add(duration);
