@@ -11,6 +11,13 @@ class AudioRecorder {
   /// use [LocalFileSystem] to permit widget testing
   static LocalFileSystem fs = LocalFileSystem();
 
+  static StreamController<int> _streamController = StreamController.broadcast();
+  static StreamController<double> _streamController2 = StreamController
+      .broadcast();
+
+  static Stream<int> amplitudeStream = _streamController.stream;
+  static Stream<double> durationStream = _streamController2.stream;
+
   static Future start(
       {String path, AudioOutputFormat audioOutputFormat}) async {
     String extension;
@@ -40,19 +47,37 @@ class AudioRecorder {
     } else {
       extension = ".m4a"; // default value
     }
+    _channel.setMethodCallHandler((call) {
+      print("setMethodCallHandler==>${call.method}");
+      switch (call.method) {
+        case "onAmplitude":
+          Map<dynamic, dynamic> arg = Map.of(call.arguments);
+          int amplitude = arg["amplitude"];
+          print("setMethodCallHandler==>${amplitude}");
+          _streamController.add(amplitude);
+          break;
+        case "onDuration":
+          Map<dynamic, dynamic> arg = Map.of(call.arguments);
+          double duration = arg["duration"];
+          print("setMethodCallHandler==>${duration}");
+          _streamController2.add(duration);
+          break;
+      }
+    });
     return _channel
         .invokeMethod('start', {"path": path, "extension": extension});
   }
 
   static Future<Recording> stop() async {
     Map<String, Object> response =
-        Map.from(await _channel.invokeMethod('stop'));
+    Map.from(await _channel.invokeMethod('stop'));
     Recording recording = new Recording(
         duration: new Duration(milliseconds: response['duration']),
         path: response['path'],
         audioOutputFormat:
-            _convertStringInAudioOutputFormat(response['audioOutputFormat']),
+        _convertStringInAudioOutputFormat(response['audioOutputFormat']),
         extension: response['audioOutputFormat']);
+    _channel.setMethodCallHandler(null);
     return recording;
   }
 
@@ -109,10 +134,13 @@ enum AudioOutputFormat { AAC, WAV }
 class Recording {
   // File path
   String path;
+
   // File extension
   String extension;
+
   // Audio duration in milliseconds
   Duration duration;
+
   // Audio output format
   AudioOutputFormat audioOutputFormat;
 

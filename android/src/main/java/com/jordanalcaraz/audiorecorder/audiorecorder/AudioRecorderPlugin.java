@@ -205,6 +205,7 @@ public class AudioRecorderPlugin implements MethodCallHandler {
         }
         HashMap<String, Integer> map = new HashMap<String, Integer>();
         map.put("amplitude", level);
+        Log.e("当前音量",""+level);
         callFlutter("onAmplitude", map);
         if (mChannel != null && registrar != null && registrar.activity() != null) {
             mHandler.postDelayed(mUpdateMicStatusTimer, 100);
