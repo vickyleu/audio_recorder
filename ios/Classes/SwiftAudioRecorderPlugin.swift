@@ -92,11 +92,10 @@ public class SwiftAudioRecorderPlugin: NSObject, FlutterPlugin, AVAudioRecorderD
                     return
                 }
                 if((audioRecorder) != nil){
+                    audioRecorder.pause()
+                    try? AVAudioSession.sharedInstance().setActive(false)
                     audioRecorder.stop()
                     audioRecorder = nil
-                    let audioSession = AVAudioSession.sharedInstance()
-                    try! audioSession.setActive(false)
-                    
                     let duration = Int(Date().timeIntervalSince(startTime as Date) * 1000)
                     isRecording = false
                     var recordingResult = [String: Any]()

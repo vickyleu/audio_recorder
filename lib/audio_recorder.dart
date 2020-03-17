@@ -64,6 +64,7 @@ class AudioRecorder {
           _streamController2.add(duration);
           break;
       }
+      return;
     });
     return _channel
         .invokeMethod('start', {"path": path, "extension": extension});
