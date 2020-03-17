@@ -54,14 +54,14 @@ public class SwiftAudioRecorderPlugin: NSObject, FlutterPlugin, AVAudioRecorderD
                 
                 do {
                     let session = AVAudioSession.sharedInstance()
-                    if(session.recordPermission != .granted){
+                    if(session.recordPermission != AVAudioSession.RecordPermission.granted){
                         session.requestRecordPermission({(suc) in
                             
                         })
                         result(FlutterError(code: "", message: "Failed to record,not prepared 33", details: nil))
                         return
                     }
-                    try session.setCategory(.playAndRecord)
+                    try session.setCategory(AVAudioSession.Category(rawValue: convertFromAVAudioSessionCategory(AVAudioSession.Category.playAndRecord)))
                     try session.overrideOutputAudioPort(.speaker)
                     try session.setActive(true)
                     
@@ -75,7 +75,7 @@ public class SwiftAudioRecorderPlugin: NSObject, FlutterPlugin, AVAudioRecorderD
                         self.audioRecorder.record()
                         self.audioRecorder.updateMeters()
                         self.voiceTimer = Timer.scheduledTimer(timeInterval: 0.05, target: self, selector:#selector(self.updateMicStatus), userInfo: nil, repeats: true)
-                        RunLoop.current.add(self.voiceTimer, forMode: RunLoop.Mode.common)
+                        RunLoop.current.add(self.voiceTimer, forMode:RunLoop.Mode.common)
                         self.voiceTimer.fireDate = Date.distantPast
                     }else{
                         result(FlutterError(code: "", message: "Failed to record,not prepared 33", details: nil))
@@ -195,4 +195,9 @@ public class SwiftAudioRecorderPlugin: NSObject, FlutterPlugin, AVAudioRecorderD
         }
     }
     
+}
+
+// Helper function inserted by Swift 4.2 migrator.
+fileprivate func convertFromAVAudioSessionCategory(_ input: AVAudioSession.Category) -> String {
+	return input.rawValue
 }
