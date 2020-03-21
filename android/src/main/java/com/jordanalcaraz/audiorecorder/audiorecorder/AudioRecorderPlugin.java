@@ -187,9 +187,8 @@ public class AudioRecorderPlugin implements MethodCallHandler {
             } catch (Exception e) {
             }
             mRecorder = null;
-            isRecording = false;
         }
-
+        isRecording = false;
     }
 
     private final Handler mHandler = new Handler();
