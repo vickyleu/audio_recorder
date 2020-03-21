@@ -12,8 +12,8 @@ class AudioRecorder {
   static LocalFileSystem fs = LocalFileSystem();
 
   static StreamController<int> _streamController = StreamController.broadcast();
-  static StreamController<double> _streamController2 = StreamController
-      .broadcast();
+  static StreamController<double> _streamController2 =
+      StreamController.broadcast();
 
   static Stream<int> amplitudeStream = _streamController.stream;
   static Stream<double> durationStream = _streamController2.stream;
@@ -71,16 +71,20 @@ class AudioRecorder {
   }
 
   static Future<Recording> stop() async {
-    final stop=await _channel.invokeMethod('stop');
-    Map<String, Object> response = Map.from(stop==null?{}:stop);
-    Recording recording = new Recording(
-        duration: new Duration(milliseconds: response['duration']),
-        path: response['path'],
-        audioOutputFormat:
-        _convertStringInAudioOutputFormat(response['audioOutputFormat']),
-        extension: response['audioOutputFormat']);
-    _channel.setMethodCallHandler(null);
-    return recording;
+    final stop = await _channel.invokeMethod('stop');
+    if(stop == null){
+      return null;
+    }else{
+      Map<String, Object> response = Map.from(stop);
+      Recording recording = new Recording(
+          duration: new Duration(milliseconds: response['duration']),
+          path: response['path'],
+          audioOutputFormat:
+          _convertStringInAudioOutputFormat(response['audioOutputFormat']),
+          extension: response['audioOutputFormat']);
+      _channel.setMethodCallHandler(null);
+      return recording;
+    }
   }
 
   static Future<bool> get isRecording async {
