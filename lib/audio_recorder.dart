@@ -73,6 +73,7 @@ class AudioRecorder {
   static Future<Recording> stop() async {
     final stop = await _channel.invokeMethod('stop');
     if (stop == null) {
+      _channel.setMethodCallHandler(null);
       return null;
     } else {
       Map<String, Object> response = Map.from(stop);
