@@ -68,7 +68,7 @@ public class AudioRecorderPlugin implements MethodCallHandler {
                     mFilePath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + fileName + mExtension;
                 }
                 Log.d(LOG_TAG, mFilePath);
-                Log.e("mFilePath",mFilePath);
+                Log.e("mFilePath", mFilePath);
                 startRecording();
 
                 result.success(null);
@@ -78,16 +78,18 @@ public class AudioRecorderPlugin implements MethodCallHandler {
                 stopRecording();
 
                 if (mFilePath == null) {
-                    Log.e(LOG_TAG,"mFilePath==null");
+                    Log.e(LOG_TAG, "mFilePath==null");
                     result.success(null);
+                    startTime = null;
                     mFilePath = null;
                     return;
                 }
                 File file = new File(mFilePath);
                 if (!file.exists()) {
-                    Log.e(LOG_TAG,"!file.exists()");
-                    mFilePath = null;
+                    Log.e(LOG_TAG, "!file.exists()");
                     result.success(null);
+                    startTime = null;
+                    mFilePath = null;
                     return;
                 }
 
@@ -99,6 +101,7 @@ public class AudioRecorderPlugin implements MethodCallHandler {
                 recordingResult.put("path", mFilePath);
                 recordingResult.put("audioOutputFormat", mExtension);
                 result.success(recordingResult);
+                startTime = null;
                 mFilePath = null;
                 break;
             case "isRecording":
@@ -170,15 +173,21 @@ public class AudioRecorderPlugin implements MethodCallHandler {
     private void stopNormalRecording() {
         if (mRecorder != null) {
             try {
-                if(isRecording){
+                if (isRecording) {
                     mRecorder.stop();
                 }
-            }catch (Exception e){
-                isRecording = false;
+            } catch (Exception e) {
             }
-            mRecorder.reset();
-            mRecorder.release();
+            try {
+                mRecorder.reset();
+            } catch (Exception e) {
+            }
+            try {
+                mRecorder.release();
+            } catch (Exception e) {
+            }
             mRecorder = null;
+            isRecording = false;
         }
 
     }
@@ -199,8 +208,8 @@ public class AudioRecorderPlugin implements MethodCallHandler {
 //        if (ratio > 1) {
 //            db = (int) (20 * Math.log10(ratio));
 //        }
-        double ratio =((7.0 * ((double)mRecorder.getMaxAmplitude())) / 32768.0);
-        Log.e("updateMicStatus", ""+ratio);
+        double ratio = ((7.0 * ((double) mRecorder.getMaxAmplitude())) / 32768.0);
+        Log.e("updateMicStatus", "" + ratio);
         int level = 0;
         if (ratio > 0.1 && ratio < 0.2) {
             level = 2;
@@ -224,7 +233,7 @@ public class AudioRecorderPlugin implements MethodCallHandler {
         map.put("amplitude", level);
         Log.e("amplitude", "" + map.toString());
         callFlutter("onAmplitude", map);
-        double duration = (System.currentTimeMillis())-(startTime != null ? (double) startTime.getTime() : 0);
+        double duration = (System.currentTimeMillis()) - (startTime != null ? (double) startTime.getTime() : 0);
         Map<Object, Object> map2 = new HashMap<Object, Object>();
         map2.put("duration", duration);
         Log.e("durationduration", "" + map2.toString());
@@ -255,7 +264,7 @@ public class AudioRecorderPlugin implements MethodCallHandler {
             if (wavRecorder != null) {
                 wavRecorder.stopRecording();
             }
-        }catch (Exception e){
+        } catch (Exception e) {
         }
         isRecording = false;
     }
