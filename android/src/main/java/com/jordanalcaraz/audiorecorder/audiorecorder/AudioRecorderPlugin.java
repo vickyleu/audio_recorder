@@ -136,26 +136,32 @@ public class AudioRecorderPlugin implements MethodCallHandler {
     }
 
     private void startNormalRecording() {
-        mRecorder = new MediaRecorder();
-        mRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-        mRecorder.setOutputFormat(getOutputFormatFromString(mExtension));
-        mRecorder.setOutputFile(mFilePath);
-        mRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
-
         try {
-            mRecorder.prepare();
-        } catch (IOException e) {
-            Log.e(LOG_TAG, "prepare() failed");
-        }
+            mRecorder = new MediaRecorder();
+            mRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+            mRecorder.setOutputFormat(getOutputFormatFromString(mExtension));
+            mRecorder.setOutputFile(mFilePath);
+            mRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
 
-        mRecorder.start();
-        isRecording = true;
+            try {
+                mRecorder.prepare();
+            } catch (IOException e) {
+                Log.e(LOG_TAG, "prepare() failed");
+            }
+            mRecorder.start();
+            isRecording = true;
+        }catch (Exception e2){
+
+        }
     }
 
     private void startWavRecording() {
-        wavRecorder = new WavRecorder(registrar.context(), mFilePath);
-        wavRecorder.startRecording();
-        isRecording = true;
+        try {
+            wavRecorder = new WavRecorder(registrar.context(), mFilePath);
+            wavRecorder.startRecording();
+            isRecording = true;
+        }catch (Exception e){
+        }
     }
 
     private void stopRecording() {
