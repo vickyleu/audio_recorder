@@ -78,11 +78,13 @@ public class AudioRecorderPlugin implements MethodCallHandler {
                 stopRecording();
 
                 if (mFilePath == null) {
+                    Log.e(LOG_TAG,"mFilePath==null");
                     result.success(null);
                     return;
                 }
                 File file = new File(mFilePath);
                 if (!file.exists()) {
+                    Log.e(LOG_TAG,"!file.exists()");
                     result.success(null);
                     return;
                 }
