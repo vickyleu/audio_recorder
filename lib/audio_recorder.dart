@@ -76,6 +76,7 @@ class AudioRecorder {
       _channel.setMethodCallHandler(null);
       return null;
     } else {
+      print(" Future<Recording> stop()====>${stop.toString()}");
       Map<String, Object> response = Map.from(stop);
       Recording recording = new Recording(
           duration: new Duration(milliseconds: response['duration']),
