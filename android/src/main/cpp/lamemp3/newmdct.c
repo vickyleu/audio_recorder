@@ -31,7 +31,6 @@
 #endif
 
 #include <string.h>
-#include <strings.h>
 #include "lame.h"
 #include "machine.h"
 #include "encoder.h"

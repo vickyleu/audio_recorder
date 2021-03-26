@@ -41,20 +41,20 @@
 # include <string.h>
 # include <ctype.h>
 #else
-/*# ifndef HAVE_STRCHR
-#  define strchr index
-#  define strrchr rindex
-# endif*/
+//# ifndef HAVE_STRCHR
+//#  define strchr index
+//#  define strrchr rindex
+//# endif
 char   *strchr(), *strrchr();
-/*# ifndef HAVE_MEMCPY
-#  define memcpy(d, s, n) bcopy ((s), (d), (n))
-# endif*/
+//# ifndef HAVE_MEMCPY
+//#  define memcpy(d, s, n) bcopy ((s), (d), (n))
+//# endif
 #endif
 
 
-#include <string.h>
-#include <malloc.h>
 #include <strings.h>
+#include <malloc.h>
+#include <string.h>
 #include <stdlib.h>
 #include "lame.h"
 #include "machine.h"
@@ -1206,8 +1206,7 @@ id3tag_set_track(lame_t gfp, const char *track)
             gfc->tag_spec.flags |= CHANGED_FLAG;
         }
         /* Look for the total track count after a "/", same restrictions */
-
-        trackcount =strchr(track,"/");
+        trackcount = strchr(track, '/');
         if (trackcount && *trackcount) {
             gfc->tag_spec.flags |= (CHANGED_FLAG | ADD_V2_FLAG);
         }

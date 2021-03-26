@@ -26,6 +26,10 @@
 # include <config.h>
 #endif
 
+#include <strings.h>
+#include <malloc.h>
+#include <string.h>
+#include <stdlib.h>
 #include "lame.h"
 #include "machine.h"
 #include "encoder.h"
@@ -34,10 +38,6 @@
 #include "VbrTag.h"
 #include "lame_global_flags.h"
 #include "tables.h"
-#include <stdint.h>
-#include <string.h>
-#include <strings.h>
-#include <stdlib.h>
 
 #ifdef __sun__
 /* woraround for SunOS 4.x, it has SEEK_* defined here */

@@ -28,9 +28,9 @@
 # include <config.h>
 #endif
 
+#include <strings.h>
 #include <string.h>
 #include <stdlib.h>
-#include <strings.h>
 #include "lame.h"
 #include "machine.h"
 #include "encoder.h"

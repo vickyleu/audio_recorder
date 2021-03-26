@@ -213,7 +213,8 @@ public class AudioRecorderPlugin implements MethodCallHandler {
                     output.delete();
                 }
                 output.createNewFile();
-                flag=MP3Recorder.pcmTomp3(inPcmPath,outPath,44100/2,2,128);
+                MP3Recorder.convertMp3(inPcmPath,outPath);
+                flag=-1;
             } catch (IOException e) {
                 e.printStackTrace();
             }

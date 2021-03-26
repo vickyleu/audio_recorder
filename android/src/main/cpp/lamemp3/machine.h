@@ -31,15 +31,20 @@
 # include <stdlib.h>
 # include <string.h>
 #else
-# ifndef HAVE_STRCHR
-#  define strchr index
-#  define strrchr rindex
-# endif
-char   *strchr(), *strrchr();
-# ifndef HAVE_MEMCPY
-#  define memcpy(d, s, n) bcopy ((s), (d), (n))
-#  define memmove(d, s, n) bcopy ((s), (d), (n))
-# endif
+//# ifndef HAVE_STRCHR
+//#  define strchr index
+//#  define strrchr rindex
+//# endif
+char
+#ifdef __ANDROID__
+__attribute__((overloadable))
+#endif
+  *strchr(), *strrchr();
+
+//# ifndef HAVE_MEMCPY
+//#  define memcpy(d, s, n) bcopy ((s), (d), (n))
+//#  define memmove(d, s, n) bcopy ((s), (d), (n))
+//# endif
 #endif
 
 #if  defined(__riscos__)  &&  defined(FPA10)
@@ -167,11 +172,11 @@ typedef FLOAT sample_t;
 
 #if 1
 #define EQ(a,b) (\
-(fabs(a) > fabs(b)) \
- ? (fabs((a)-(b)) <= (fabs(a) * 1e-6f)) \
- : (fabs((a)-(b)) <= (fabs(b) * 1e-6f)))
+(abs(a) > abs(b)) \
+ ? (abs((a)-(b)) <= (abs(a) * 1e-6f)) \
+ : (abs((a)-(b)) <= (abs(b) * 1e-6f)))
 #else
-#define EQ(a,b) (fabs((a)-(b))<1E-37)
+#define EQ(a,b) (abs((a)-(b))<1E-37)
 #endif
 
 #define NEQ(a,b) (!EQ(a,b))

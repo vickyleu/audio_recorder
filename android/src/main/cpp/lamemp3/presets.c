@@ -24,6 +24,7 @@
 # include <config.h>
 #endif
 
+#include <stdlib.h>
 #include "lame.h"
 #include "machine.h"
 #include "set_get.h"
@@ -33,12 +34,12 @@
 
 #define SET_OPTION(opt, val, def) if (enforce) \
     (void) lame_set_##opt(gfp, val); \
-    else if (!(fabs(lame_get_##opt(gfp) - def) > 0)) \
+    else if (!(abs(lame_get_##opt(gfp) - def) > 0)) \
     (void) lame_set_##opt(gfp, val);
 
 #define SET__OPTION(opt, val, def) if (enforce) \
     lame_set_##opt(gfp, val); \
-    else if (!(fabs(lame_get_##opt(gfp) - def) > 0)) \
+    else if (!(abs(lame_get_##opt(gfp) - def) > 0)) \
     lame_set_##opt(gfp, val);
 
 #undef Min
@@ -206,7 +207,7 @@ apply_vbr_preset(lame_global_flags * gfp, int a, int enforce)
     }
     gfp->internal_flags->cfg.minval = set->minval;
     {   /* take care of gain adjustments */
-        double const x = fabs(gfp->scale);
+        double const x = abs(gfp->scale);
         double const y = (x > 0.f) ? (10.f * log10(x)) : 0.f;
         gfp->internal_flags->cfg.ATHfixpoint = set->ath_fixpoint - y;
     }
