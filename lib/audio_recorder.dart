@@ -89,6 +89,11 @@ class AudioRecorder {
     }
   }
 
+  static Future<String> convertToMp3(String pcmPath,String outputPath) async{
+    return _channel.invokeMethod('convertMp3', {"pcm": pcmPath, "path": outputPath});
+  }
+
+
   static Future<bool> get isRecording async {
     bool isRecording = await _channel.invokeMethod('isRecording');
     return isRecording;

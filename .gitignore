@@ -4,10 +4,11 @@
 .packages
 .pub/
 build/
+.dart_tool
 ios/.generated/
 packages
 pubspec.lock
-
+.flutter-plugins**
 \.vscode/
 
 android/\.classpath

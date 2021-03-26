@@ -1,4 +1,4 @@
-package com.jordanalcaraz.audiorecorder.audiorecorder;
+package com.vickyleu.audiorecorder;
 
 import android.Manifest;
 import android.content.Context;
@@ -55,6 +55,11 @@ public class AudioRecorderPlugin implements MethodCallHandler {
     public void onMethodCall(MethodCall call, Result result) {
         mCall = call;
         switch (call.method) {
+            case "convertMp3":
+                String pcm=call.argument("pcm");
+                String outPath=call.argument("path");
+                encodeToMp3(pcm,outPath,result);
+                break;
             case "start":
 
                 Log.d(LOG_TAG, "Start");
@@ -196,6 +201,31 @@ public class AudioRecorderPlugin implements MethodCallHandler {
         }
         isRecording = false;
     }
+
+
+    private void encodeToMp3(String inPcmPath,String outPath,Result result){
+        File pcm=new File(inPcmPath);
+        int flag=0;
+        if(pcm.exists()){
+            File output=new File(outPath);
+            try {
+                if(output.exists()){
+                    output.delete();
+                }
+                output.createNewFile();
+                flag=MP3Recorder.pcmTomp3(inPcmPath,outPath,44100/2,2,128);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        if(flag==-1){
+            result.success(outPath);
+        }else{
+            result.error(String.valueOf(flag),"转换失败",null);
+        }
+
+    }
+
 
     private final Handler mHandler = new Handler();
     private Runnable mUpdateMicStatusTimer = new Runnable() {

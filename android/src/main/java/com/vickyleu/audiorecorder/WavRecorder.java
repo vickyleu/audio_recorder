@@ -1,4 +1,4 @@
-package com.jordanalcaraz.audiorecorder.audiorecorder;
+package com.vickyleu.audiorecorder;
 
 import java.io.File;
 import java.io.FileInputStream;

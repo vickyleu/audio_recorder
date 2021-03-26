@@ -2,6 +2,7 @@ import Flutter
 import UIKit
 import AVFoundation
 
+
 public class SwiftAudioRecorderPlugin: NSObject, FlutterPlugin, AVAudioRecorderDelegate {
     var isRecording = false
     var hasPermissions = false
@@ -12,6 +13,9 @@ public class SwiftAudioRecorderPlugin: NSObject, FlutterPlugin, AVAudioRecorderD
     var mCall: FlutterMethodCall!
     var voiceTimer: Timer!
     var audioRecorder: AVAudioRecorder!
+    
+    private  let encoderQueue = DispatchQueue(label: "com.audio.encoder.queue")
+    
     
     init(channel: FlutterMethodChannel) {
         self.mChannel = channel
@@ -27,6 +31,14 @@ public class SwiftAudioRecorderPlugin: NSObject, FlutterPlugin, AVAudioRecorderD
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         self.mCall = call
         switch call.method {
+            case "convertMp3":
+                let dic = call.arguments as! [String: Any]
+                encodeToMp3(inPcmPath: (dic["pcm"] as? String ?? ""), outMp3Path: (dic["path"] as? String ?? "")) { (Float) -> (Void) in
+                    
+                } onComplete: {
+                    result((dic["path"] as? String ?? ""))
+                }
+            break
             case "start":
                 let dic = call.arguments as! [String: Any]
                 mExtension = dic["extension"] as? String ?? ""
@@ -87,6 +99,7 @@ public class SwiftAudioRecorderPlugin: NSObject, FlutterPlugin, AVAudioRecorderD
                 }
                 isRecording = true
                 result(nil)
+                break
             case "stop":
                 if(!isRecording){
                     return
@@ -112,10 +125,11 @@ public class SwiftAudioRecorderPlugin: NSObject, FlutterPlugin, AVAudioRecorderD
                         self.voiceTimer = nil
                     }
             }
-            
+                break
             case "isRecording":
                 print("isRecording")
                 result(isRecording)
+                break
             case "hasPermissions":
                 print("hasPermissions")
                 switch AVAudioSession.sharedInstance().recordPermission{
@@ -143,8 +157,10 @@ public class SwiftAudioRecorderPlugin: NSObject, FlutterPlugin, AVAudioRecorderD
                         break
                 }
                 result(hasPermissions)
+                break
             default:
                 result(FlutterMethodNotImplemented)
+                break
         }
     }
     
@@ -194,6 +210,64 @@ public class SwiftAudioRecorderPlugin: NSObject, FlutterPlugin, AVAudioRecorderD
             mChannel.invokeMethod(method, arguments: map)
         }
     }
+    
+    
+    func encodeToMp3(
+            inPcmPath: String,outMp3Path: String,
+            onProgress: @escaping (Float) -> (Void),onComplete: @escaping () -> (Void) ) {
+            encoderQueue.async {
+                let lame = lame_init()
+                lame_set_in_samplerate(lame, 44100)
+                lame_set_out_samplerate(lame, 0)
+                lame_set_brate(lame, 0)
+                lame_set_quality(lame, 4)
+                lame_set_VBR(lame, vbr_default)
+                lame_init_params(lame)
+
+                let pcmFile: UnsafeMutablePointer<FILE> = fopen(inPcmPath, "rb")
+                fseek(pcmFile, 0 , SEEK_END)
+                let fileSize = ftell(pcmFile)
+                // Skip file header.
+                let fileHeader = 4 * 1024
+                fseek(pcmFile, fileHeader, SEEK_SET)
+
+                let mp3File: UnsafeMutablePointer<FILE> = fopen(outMp3Path, "wb")
+
+                let pcmSize = 1024 * 8
+                let pcmbuffer = UnsafeMutablePointer<Int16>.allocate(capacity: Int(pcmSize * 2))
+
+                let mp3Size: Int32 = 1024 * 8
+                let mp3buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: Int(mp3Size))
+                var write: Int32 = 0
+                var read = 0
+                repeat {
+                    let size = MemoryLayout<Int16>.size * 2
+                    read = fread(pcmbuffer, size, pcmSize, pcmFile)
+                    // Progress
+                    if read != 0 {
+                        let progress = Float(ftell(pcmFile)) / Float(fileSize)
+                        DispatchQueue.main.sync { onProgress(progress) }
+                    }
+
+                    if read == 0 {
+                        write = lame_encode_flush(lame, mp3buffer, mp3Size)
+                    } else {
+                        write = lame_encode_buffer_interleaved(lame, pcmbuffer, Int32(read), mp3buffer, mp3Size)
+                    }
+
+                    fwrite(mp3buffer, Int(write), 1, mp3File)
+
+                } while read != 0
+
+                // Clean up
+                lame_close(lame)
+                fclose(mp3File)
+                fclose(pcmFile)
+                pcmbuffer.deallocate()
+                mp3buffer.deallocate()
+                DispatchQueue.main.sync { onComplete() }
+            }
+        }
     
 }
 

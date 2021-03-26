@@ -18,7 +18,7 @@ flutter:
   plugin:
     platforms:
       android:
-        package: com.jordanalcaraz.audiorecorder.audiorecorder
+        package: com.vickyleu.audiorecorder
         pluginClass: AudioRecorderPlugin
       ios:
         pluginClass: AudioRecorderPlugin
