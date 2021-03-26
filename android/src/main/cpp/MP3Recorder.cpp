@@ -8,7 +8,7 @@
 #include"android/log.h"
 #define LOG_TAG "lameUtils"
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
-#define BUFFER_SIZE 8192
+
 
 static lame_global_flags *lame = NULL;
 long nowConvertBytes = 0;
@@ -41,10 +41,11 @@ void lameInit(jint inSampleRate,
     resetLame();
     lame = lame_init();
     lame_set_in_samplerate(lame, inSampleRate);
-    lame_set_num_channels(lame, channel);
     lame_set_out_samplerate(lame, outSampleRate);
     lame_set_brate(lame, outBitRate);
     lame_set_quality(lame, quality);
+
+    lame_set_num_channels(lame,channel);
     if(mode == 0) { // use CBR
         lame_set_VBR(lame, vbr_default);
     } else if(mode == 1){ //use VBR
@@ -53,8 +54,9 @@ void lameInit(jint inSampleRate,
         lame_set_VBR(lame, vbr_mtrh);
     }
     lame_init_params(lame);
-}
 
+}
+#define BUFFER_SIZE 1024 * 8
 extern "C" JNIEXPORT void JNICALL
 Java_com_vickyleu_audiorecorder_MP3Recorder_init(JNIEnv *env, jclass type, jint inSampleRate,
                                                 jint channel, jint mode, jint outSampleRate,
@@ -67,12 +69,21 @@ void JNICALL Java_com_vickyleu_audiorecorder_MP3Recorder_convertMp3
         (JNIEnv * env, jclass obj, jstring jInputPath, jstring jMp3Path) {
     const char* cInput = env->GetStringUTFChars(jInputPath, 0);
     const char* cMp3 = env->GetStringUTFChars(jMp3Path, 0);
+
     //open input file and output file
     FILE* fInput = fopen(cInput,"rb");
-    FILE* fMp3 = fopen(cMp3,"wb");
-    short int inputBuffer[BUFFER_SIZE * 2];
-    unsigned char mp3Buffer[BUFFER_SIZE];//You must specified at least 7200
-    int read = 0; // number of bytes in inputBuffer, if in the end return 0
+    FILE* fMp3 = fopen(cMp3,"wb+");
+
+    fseek(fInput, 0 , SEEK_END);
+    int fileSize = ftell(fInput);
+    //Skip file header.
+    int fileHeader = 4 * 1024;
+    fseek(fInput, fileHeader, SEEK_SET);
+
+
+    short int pcmbuffer[BUFFER_SIZE * 2];
+    unsigned char mp3Buffer[fileSize];//You must specified at least 7200
+    int read = 0; // number of bytes in pcmbuffer, if in the end return 0
     int write = 0;// number of bytes output in mp3buffer.  can be 0
     long total = 0; // the bytes of reading input file
     nowConvertBytes = 0;
@@ -83,13 +94,14 @@ void JNICALL Java_com_vickyleu_audiorecorder_MP3Recorder_convertMp3
 
     //convert to mp3
     do{
-        read = static_cast<int>(fread(inputBuffer, sizeof(short int) * 2, BUFFER_SIZE, fInput));
+        read = static_cast<int>(fread(pcmbuffer, sizeof(short int) * 2, BUFFER_SIZE, fInput));
         total +=  read * sizeof(short int)*2;
         nowConvertBytes = total;
         if(read != 0){
-            write = lame_encode_buffer_interleaved(lame, inputBuffer, read, mp3Buffer, BUFFER_SIZE);
+            write = lame_encode_buffer(lame, pcmbuffer, nullptr, read, mp3Buffer, BUFFER_SIZE);//***单声道写入
+            //write = lame_encode_buffer_interleaved(lame, pcmbuffer, read, mp3Buffer, BUFFER_SIZE);
             //write the converted buffer to the file
-            fwrite(mp3Buffer, sizeof(unsigned char), static_cast<size_t>(write), fMp3);
+            fwrite(mp3Buffer, 1, static_cast<size_t>(write), fMp3);
         }
         //if in the end flush
         if(read == 0){

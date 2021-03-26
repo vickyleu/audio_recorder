@@ -58,8 +58,10 @@ public class SwiftAudioRecorderPlugin: NSObject, FlutterPlugin, AVAudioRecorderD
                 let settings = [
                     AVSampleRateKey:44100,
                     AVNumberOfChannelsKey:1,
-                    AVLinearPCMBitDepthKey:32,
+                    AVLinearPCMBitDepthKey:16,
                     AVEncoderBitRateKey:128000,
+                    AVLinearPCMIsBigEndianKey:0,
+                    AVLinearPCMIsFloatKey:0,
                     AVEncoderAudioQualityKey:AVAudioQuality.max.rawValue,
                     AVFormatIDKey:getOutputFormatFromString(mExtension),
                 ]
@@ -169,7 +171,7 @@ public class SwiftAudioRecorderPlugin: NSObject, FlutterPlugin, AVAudioRecorderD
             case ".mp4", ".aac", ".m4a":
                 return Int(kAudioFormatMPEG4AAC)
             default:
-                return Int(kAudioFormatMPEG4AAC)
+                return Int(kAudioFormatLinearPCM)
         }
     }
     
@@ -218,11 +220,12 @@ public class SwiftAudioRecorderPlugin: NSObject, FlutterPlugin, AVAudioRecorderD
             encoderQueue.async {
                 let lame = lame_init()
                 lame_set_in_samplerate(lame, 44100)
-                lame_set_out_samplerate(lame, 0)
-                lame_set_brate(lame, 0)
-                lame_set_quality(lame, 4)
+               // lame_set_out_samplerate(lame, 0)
+               // lame_set_brate(lame, 0)
+               // lame_set_quality(lame, 4)
                 lame_set_VBR(lame, vbr_default)
                 lame_init_params(lame)
+                lame_set_num_channels(lame,1)
 
                 let pcmFile: UnsafeMutablePointer<FILE> = fopen(inPcmPath, "rb")
                 fseek(pcmFile, 0 , SEEK_END)
@@ -231,7 +234,7 @@ public class SwiftAudioRecorderPlugin: NSObject, FlutterPlugin, AVAudioRecorderD
                 let fileHeader = 4 * 1024
                 fseek(pcmFile, fileHeader, SEEK_SET)
 
-                let mp3File: UnsafeMutablePointer<FILE> = fopen(outMp3Path, "wb")
+                let mp3File: UnsafeMutablePointer<FILE> = fopen(outMp3Path, "wb+")
 
                 let pcmSize = 1024 * 8
                 let pcmbuffer = UnsafeMutablePointer<Int16>.allocate(capacity: Int(pcmSize * 2))
@@ -252,7 +255,8 @@ public class SwiftAudioRecorderPlugin: NSObject, FlutterPlugin, AVAudioRecorderD
                     if read == 0 {
                         write = lame_encode_flush(lame, mp3buffer, mp3Size)
                     } else {
-                        write = lame_encode_buffer_interleaved(lame, pcmbuffer, Int32(read), mp3buffer, mp3Size)
+                        write = lame_encode_buffer(lame, pcmbuffer,pcmbuffer, Int32(read), mp3buffer, mp3Size);//***单声道写入
+                        //write = lame_encode_buffer_interleaved(lame, pcmbuffer, Int32(read), mp3buffer, mp3Size)
                     }
 
                     fwrite(mp3buffer, Int(write), 1, mp3File)

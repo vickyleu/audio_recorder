@@ -3,12 +3,17 @@ package com.vickyleu.audiorecorder;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.media.AudioFormat;
+import android.media.AudioRecord;
 import android.media.MediaRecorder;
 import android.os.Environment;
 import android.os.Handler;
 import android.util.Log;
 
+import java.io.BufferedOutputStream;
+import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Calendar;
 import java.util.Date;
@@ -28,7 +33,7 @@ public class AudioRecorderPlugin implements MethodCallHandler {
     private final Registrar registrar;
     private boolean isRecording = false;
     private static final String LOG_TAG = "AudioRecorder";
-    private MediaRecorder mRecorder = null;
+    private AudioRecord mRecorder = null;
     private MethodChannel mChannel = null;
     private MethodCall mCall = null;
     private String mFilePath = null;
@@ -36,6 +41,10 @@ public class AudioRecorderPlugin implements MethodCallHandler {
     private String mExtension = "";
     private WavRecorder wavRecorder;
 
+    private  DataOutputStream dos;
+
+    private  int amplitude;
+    int bufferSize;
     private static int BASE = 32678;
 
     /**
@@ -142,19 +151,53 @@ public class AudioRecorderPlugin implements MethodCallHandler {
 
     private void startNormalRecording() {
         try {
-            mRecorder = new MediaRecorder();
-            mRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-            mRecorder.setOutputFormat(getOutputFormatFromString(mExtension));
-            mRecorder.setOutputFile(mFilePath);
-            mRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
+            int audioSource=MediaRecorder.AudioSource.MIC;
+            int sampleRateInHz=44100;
+            int channelConfig=AudioFormat.CHANNEL_IN_MONO;//单声道
+            int audioFormat = AudioFormat.ENCODING_PCM_16BIT; //量化位数
+            bufferSize = AudioRecord.getMinBufferSize(sampleRateInHz,channelConfig, audioFormat);//计算最小缓冲区
 
-            try {
-                mRecorder.prepare();
-            } catch (IOException e) {
-                Log.e(LOG_TAG, "prepare() failed");
+            mRecorder = new AudioRecord(audioSource, sampleRateInHz,channelConfig, audioFormat, bufferSize);
+            File recordPath=new File(mFilePath);
+            if(recordPath.exists()){
+                recordPath.delete();
             }
-            mRecorder.start();
+            if(!recordPath.getParentFile().isDirectory()){
+                recordPath.getParentFile().delete();
+            }
+            if(!recordPath.getParentFile().exists()){
+                recordPath.getParentFile().mkdirs();
+            }
+            recordPath.createNewFile();
+
+            dos= new DataOutputStream(new BufferedOutputStream(new FileOutputStream(mFilePath)));
+
+
+
+            mRecorder.startRecording();//开始录音
             isRecording = true;
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    int r = 0;
+                    byte[] buffer = new byte[bufferSize];
+                    while (isRecording) {
+                        int bufferReadResult = mRecorder.read(buffer,0,bufferSize);
+                        amplitude = (buffer[0] & 0xff) << 8 | buffer[1];
+                        for (int i = 0; i < bufferReadResult; i++)
+                        {
+                            try {
+                                dos.write(buffer[i]);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        r++;
+                    }
+                }
+            }).start();
+
+
         }catch (Exception e2){
 
         }
@@ -186,11 +229,8 @@ public class AudioRecorderPlugin implements MethodCallHandler {
             try {
                 if (isRecording) {
                     mRecorder.stop();
+                    dos.close();
                 }
-            } catch (Exception e) {
-            }
-            try {
-                mRecorder.reset();
             } catch (Exception e) {
             }
             try {
@@ -213,7 +253,7 @@ public class AudioRecorderPlugin implements MethodCallHandler {
                     output.delete();
                 }
                 output.createNewFile();
-                MP3Recorder.init(44100,1,0,44100,96,7);
+                MP3Recorder.init(44100,1,0,44100,96,2);
                 MP3Recorder.convertMp3(inPcmPath,outPath);
                 flag=-1;
             } catch (IOException e) {
@@ -239,13 +279,10 @@ public class AudioRecorderPlugin implements MethodCallHandler {
 
     private void updateMicStatus() {
         Log.e("startRecording", "updateMicStatus: ");
-        // int vuSize = 10 * mMediaRecorder.getMaxAmplitude() / 32768;
-//        int ratio = mRecorder.getMaxAmplitude() / BASE;
-//        int db = 0;// 分贝
-//        if (ratio > 1) {
-//            db = (int) (20 * Math.log10(ratio));
-//        }
-        double ratio = ((7.0 * ((double) mRecorder.getMaxAmplitude())) / 32768.0);
+        // Determine amplitude
+        double ratio = 7.0 * Math
+                .log10(Math.abs(amplitude) / 32768.0);
+//        double ratio = ((7.0 * ((double) amplitude)) / 32768.0);
         Log.e("updateMicStatus", "" + ratio);
         int level = 0;
         if (ratio > 0.1 && ratio < 0.2) {
@@ -313,7 +350,7 @@ public class AudioRecorderPlugin implements MethodCallHandler {
             case ".m4a":
                 return MediaRecorder.OutputFormat.MPEG_4;
             default:
-                return MediaRecorder.OutputFormat.MPEG_4;
+                return MediaRecorder.OutputFormat.AMR_NB;
         }
     }
 

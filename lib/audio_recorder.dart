@@ -112,6 +112,8 @@ class AudioRecorder {
       case ".aac":
       case ".m4a":
         return AudioOutputFormat.AAC;
+      case ".pcm":
+        return AudioOutputFormat.PCM;
       default:
         return null;
     }
@@ -123,6 +125,7 @@ class AudioRecorder {
       case ".mp4":
       case ".aac":
       case ".m4a":
+      case ".pcm":
         return true;
       default:
         return false;
@@ -136,13 +139,15 @@ class AudioRecorder {
         return ".wav";
       case AudioOutputFormat.AAC:
         return ".m4a";
+      case AudioOutputFormat.PCM:
+        return ".pcm";
       default:
         return ".m4a";
     }
   }
 }
 
-enum AudioOutputFormat { AAC, WAV }
+enum AudioOutputFormat { AAC, WAV,PCM }
 
 class Recording {
   // File path
