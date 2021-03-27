@@ -77,12 +77,10 @@ void JNICALL Java_com_vickyleu_audiorecorder_MP3Recorder_convertMp3
     FILE* fInput = fopen(cInput,"rb");
     FILE* fMp3 = fopen(cMp3,"wb+");
 
-    fseek(fInput, 0 , SEEK_END);
-    int fileSize = ftell(fInput);
     //Skip file header.
     int fileHeader = 4 * 1024;
     fseek(fInput, fileHeader, SEEK_SET);
-
+    int fileSize = ftell(fInput);
 
     short int pcmbuffer[BUFFER_SIZE];
     unsigned char mp3Buffer[fileSize];//You must specified at least 7200
