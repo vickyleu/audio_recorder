@@ -84,7 +84,7 @@ void JNICALL Java_com_vickyleu_audiorecorder_MP3Recorder_convertMp3
     fseek(fInput, fileHeader, SEEK_SET);
 
 
-    short int pcmbuffer[BUFFER_SIZE * 2];
+    short int pcmbuffer[BUFFER_SIZE];
     unsigned char mp3Buffer[fileSize];//You must specified at least 7200
     int read = 0; // number of bytes in pcmbuffer, if in the end return 0
     int write = 0;// number of bytes output in mp3buffer.  can be 0
@@ -97,8 +97,8 @@ void JNICALL Java_com_vickyleu_audiorecorder_MP3Recorder_convertMp3
 
     //convert to mp3
     do{
-        read = static_cast<int>(fread(pcmbuffer, sizeof(short int) * 2, BUFFER_SIZE, fInput));
-        total +=  read * sizeof(short int)*2;
+        read = static_cast<int>(fread(pcmbuffer, sizeof(short int), BUFFER_SIZE, fInput));
+        total +=  read * sizeof(short int);
         nowConvertBytes = total;
         if(read != 0){
             write = lame_encode_buffer(lame, pcmbuffer, nullptr, read, mp3Buffer, BUFFER_SIZE);//***单声道写入
