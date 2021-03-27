@@ -60,8 +60,6 @@ public class SwiftAudioRecorderPlugin: NSObject, FlutterPlugin, AVAudioRecorderD
                     AVNumberOfChannelsKey:1,
                     AVLinearPCMBitDepthKey:16,
                     AVEncoderBitRateKey:128000,
-                    AVLinearPCMIsBigEndianKey:0,
-                    AVLinearPCMIsFloatKey:0,
                     AVEncoderAudioQualityKey:AVAudioQuality.max.rawValue,
                     AVFormatIDKey:getOutputFormatFromString(mExtension),
                 ]
@@ -220,45 +218,46 @@ public class SwiftAudioRecorderPlugin: NSObject, FlutterPlugin, AVAudioRecorderD
             encoderQueue.async {
                 let lame = lame_init()
                 lame_set_in_samplerate(lame, 44100)
-               // lame_set_out_samplerate(lame, 0)
-               // lame_set_brate(lame, 0)
-               // lame_set_quality(lame, 4)
                 lame_set_VBR(lame, vbr_default)
-                lame_init_params(lame)
+                lame_set_VBR_quality(lame,2)
+                 lame_set_brate(lame, 16);
+                 lame_set_mode(lame,MONO);
+                 lame_set_quality(lame,2);
+                 
                 lame_set_num_channels(lame,1)
+                lame_init_params(lame)
+                
 
                 let pcmFile: UnsafeMutablePointer<FILE> = fopen(inPcmPath, "rb")
-                fseek(pcmFile, 0 , SEEK_END)
-                let fileSize = ftell(pcmFile)
+                
                 // Skip file header.
-                let fileHeader = 4 * 1024
-                fseek(pcmFile, fileHeader, SEEK_SET)
+                let fileHeader = (4 * 1024)
+                fseek(pcmFile, fileHeader, SEEK_CUR)
 
+                let fileSize = ftell(pcmFile)
                 let mp3File: UnsafeMutablePointer<FILE> = fopen(outMp3Path, "wb+")
 
                 let pcmSize = 1024 * 8
-                let pcmbuffer = UnsafeMutablePointer<Int16>.allocate(capacity: Int(pcmSize * 2))
+                let pcmbuffer = UnsafeMutablePointer<Int16>.allocate(capacity: Int(pcmSize))
 
                 let mp3Size: Int32 = 1024 * 8
                 let mp3buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: Int(mp3Size))
                 var write: Int32 = 0
                 var read = 0
                 repeat {
-                    let size = MemoryLayout<Int16>.size * 2
+                    let size = MemoryLayout<Int16>.size
                     read = fread(pcmbuffer, size, pcmSize, pcmFile)
                     // Progress
                     if read != 0 {
                         let progress = Float(ftell(pcmFile)) / Float(fileSize)
                         DispatchQueue.main.sync { onProgress(progress) }
                     }
-
                     if read == 0 {
                         write = lame_encode_flush(lame, mp3buffer, mp3Size)
                     } else {
-                        write = lame_encode_buffer(lame, pcmbuffer,pcmbuffer, Int32(read), mp3buffer, mp3Size);//***单声道写入
-                        //write = lame_encode_buffer_interleaved(lame, pcmbuffer, Int32(read), mp3buffer, mp3Size)
+                        write = lame_encode_buffer(lame, pcmbuffer,nil, Int32(read), mp3buffer, mp3Size);//***单声道写入
+//                        write = lame_encode_buffer_interleaved(lame, pcmbuffer, Int32(read), mp3buffer, mp3Size)
                     }
-
                     fwrite(mp3buffer, Int(write), 1, mp3File)
 
                 } while read != 0
