@@ -219,7 +219,7 @@ public class SwiftAudioRecorderPlugin: NSObject, FlutterPlugin, AVAudioRecorderD
                 let lame = lame_init()
                 lame_set_in_samplerate(lame, 44100)
                 lame_set_VBR(lame, vbr_default)
-                lame_set_VBR_quality(lame,2)
+                 lame_set_VBR_quality(lame,2)
                  lame_set_brate(lame, 16);
                  lame_set_mode(lame,MONO);
                  lame_set_quality(lame,2);

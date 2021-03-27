@@ -44,7 +44,7 @@ void lameInit(jint inSampleRate,
     lame_set_out_samplerate(lame, outSampleRate);
     lame_set_brate(lame, outBitRate);
     lame_set_quality(lame, quality);
-
+    lame_set_mode(lame,MONO);
     lame_set_num_channels(lame,channel);
     if(mode == 0) { // use CBR
         lame_set_VBR(lame, vbr_default);
@@ -53,6 +53,9 @@ void lameInit(jint inSampleRate,
     } else{ // use ABR
         lame_set_VBR(lame, vbr_mtrh);
     }
+    lame_set_VBR_quality(lame,2);
+
+
     lame_init_params(lame);
 
 }
